@@ -13,8 +13,8 @@ const defaultPortfolioData = [
 	{ name: 'Dogecoin', value: 14.4, color: '#C2A633' },
 ]
 
-// Default watchlist data for initial display
-const defaultWatchlistData = [
+// Default watchlist data for initial display (unused but kept for reference)
+/*
 	{
 		id: 1,
 		name: 'Ethereum',
@@ -136,6 +136,7 @@ const defaultWatchlistData = [
 		]
 	}
 ]
+*/
 
 // Sparkline component
 const Sparkline: React.FC<{ data: any[], isPositive: boolean }> = ({ data, isPositive }) => {

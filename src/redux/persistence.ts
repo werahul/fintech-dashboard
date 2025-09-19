@@ -1,9 +1,9 @@
 import { type Middleware } from '@reduxjs/toolkit'
-// import { RootState } from './store'
+import type { RootState } from './store'
 
 const STORAGE_KEY = 'portfolio-watchlist'
 
-export const persistenceMiddleware: Middleware<{}, RootState> = (store) => (next) => (action) => {
+export const persistenceMiddleware: Middleware<{}, RootState, any> = (store) => (next) => (action) => {
   const result = next(action)
   
   // Save to localStorage after every action

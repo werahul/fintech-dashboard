@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction, createAsyncThunk } from '@reduxjs/toolkit'
-import { getTokenPrices, getTokenPrice, searchTokens, getTrendingTokens, type CoinGeckoToken, type SearchResult, type TrendingToken } from '../utils/api'
+import { getTokenPrices, getTokenPrice, searchTokens, getTrendingTokens, type SearchResult, type TrendingToken } from '../utils/api'
 
 export interface Token {
   id: string
