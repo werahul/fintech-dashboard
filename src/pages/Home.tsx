@@ -18,150 +18,26 @@ const defaultPortfolioData = [
 	{ name: 'Dogecoin', value: 14.4, color: '#C2A633' },
 ]
 
-// Default watchlist data for initial display (unused but kept for reference)
-/*
-	{
-		id: 1,
-		name: 'Ethereum',
-		symbol: 'ETH',
-		iconColor: '#627EEA',
-		iconText: '♦',
-		price: 43250.67,
-		change24h: 2.30,
-		holdings: 0.0500,
-		value: 2162.53,
-		sparklineData: [
-			{ day: 1, price: 42000 },
-			{ day: 2, price: 42500 },
-			{ day: 3, price: 41800 },
-			{ day: 4, price: 43000 },
-			{ day: 5, price: 42800 },
-			{ day: 6, price: 43500 },
-			{ day: 7, price: 43250 }
-		]
-	},
-	{
-		id: 2,
-		name: 'Bitcoin',
-		symbol: 'BTC',
-		iconColor: '#F7931A',
-		iconText: 'B',
-		price: 2654.32,
-		change24h: -1.20,
-		holdings: 2.5000,
-		value: 6635.80,
-		sparklineData: [
-			{ day: 1, price: 2700 },
-			{ day: 2, price: 2680 },
-			{ day: 3, price: 2720 },
-			{ day: 4, price: 2690 },
-			{ day: 5, price: 2670 },
-			{ day: 6, price: 2660 },
-			{ day: 7, price: 2654 }
-		]
-	},
-	{
-		id: 3,
-		name: 'Solana',
-		symbol: 'SOL',
-		iconColor: '#9945FF',
-		iconText: 'S',
-		price: 98.45,
-		change24h: 4.70,
-		holdings: 15.0000,
-		value: 1476.75,
-		sparklineData: [
-			{ day: 1, price: 90 },
-			{ day: 2, price: 92 },
-			{ day: 3, price: 88 },
-			{ day: 4, price: 95 },
-			{ day: 5, price: 93 },
-			{ day: 6, price: 96 },
-			{ day: 7, price: 98.45 }
-		]
-	},
-	{
-		id: 4,
-		name: 'Dogecoin',
-		symbol: 'DOGE',
-		iconColor: '#C2A633',
-		iconText: '🐕',
-		price: 0.15,
-		change24h: 2.30,
-		holdings: 10000.0000,
-		value: 1500.00,
-		sparklineData: [
-			{ day: 1, price: 0.14 },
-			{ day: 2, price: 0.145 },
-			{ day: 3, price: 0.142 },
-			{ day: 4, price: 0.148 },
-			{ day: 5, price: 0.146 },
-			{ day: 6, price: 0.149 },
-			{ day: 7, price: 0.15 }
-		]
-	},
-	{
-		id: 5,
-		name: 'USDC',
-		symbol: 'USDC',
-		iconColor: '#2775CA',
-		iconText: 'USDC',
-		price: 1.00,
-		change24h: -1.20,
-		holdings: 2500.0000,
-		value: 2500.00,
-		sparklineData: [
-			{ day: 1, price: 1.01 },
-			{ day: 2, price: 1.005 },
-			{ day: 3, price: 1.008 },
-			{ day: 4, price: 1.002 },
-			{ day: 5, price: 0.998 },
-			{ day: 6, price: 0.995 },
-			{ day: 7, price: 1.00 }
-		]
-	},
-	{
-		id: 6,
-		name: 'Stellar',
-		symbol: 'XLM',
-		iconColor: '#7D00FF',
-		iconText: 'S',
-		price: 0.098,
-		change24h: 4.70,
-		holdings: 15000.0000,
-		value: 1470.00,
-		sparklineData: [
-			{ day: 1, price: 0.09 },
-			{ day: 2, price: 0.092 },
-			{ day: 3, price: 0.088 },
-			{ day: 4, price: 0.095 },
-			{ day: 5, price: 0.093 },
-			{ day: 6, price: 0.096 },
-			{ day: 7, price: 0.098 }
-		]
-	}
-]
-*/
 
 // Portfolio loading component
 const PortfolioLoading: React.FC = () => (
-  <div className="flex items-center justify-center py-12">
-    <div className="text-center">
-      <LoadingSpinner size="lg" className="mx-auto mb-4 text-blue-400" />
-      <p className="text-gray-400">Loading portfolio data...</p>
-    </div>
-  </div>
+	<div className="flex items-center justify-center py-12">
+		<div className="text-center">
+			<LoadingSpinner size="lg" className="mx-auto mb-4 text-blue-400" />
+			<p className="text-gray-400">Loading portfolio data...</p>
+		</div>
+	</div>
 )
 
 // Portfolio error component
 const PortfolioError: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
-  <div className="flex items-center justify-center py-12">
-    <ErrorState
-      title="Failed to load portfolio"
-      message="Unable to fetch your portfolio data. Please try again."
-      onRetry={onRetry}
-    />
-  </div>
+	<div className="flex items-center justify-center py-12">
+		<ErrorState
+			title="Failed to load portfolio"
+			message="Unable to fetch your portfolio data. Please try again."
+			onRetry={onRetry}
+		/>
+	</div>
 )
 
 const Home: React.FC = () => {
@@ -172,12 +48,12 @@ const Home: React.FC = () => {
 	const [editingHoldings, setEditingHoldings] = useState<string>('')
 	const [showMenuForToken, setShowMenuForToken] = useState<string | null>(null)
 	const [showEditModal, setShowEditModal] = useState(false)
-	
+
 	// Load trending tokens on component mount
 	useEffect(() => {
 		dispatch(fetchTrendingTokens())
 	}, [dispatch])
-	
+
 	// Close menu when clicking outside
 	useEffect(() => {
 		const handleClickOutside = () => {
@@ -185,13 +61,13 @@ const Home: React.FC = () => {
 				setShowMenuForToken(null)
 			}
 		}
-		
+
 		document.addEventListener('mousedown', handleClickOutside)
 		return () => {
 			document.removeEventListener('mousedown', handleClickOutside)
 		}
 	}, [showMenuForToken])
-	
+
 	// Optimized handlers with useCallback
 	const handleRefreshPrices = useCallback(() => {
 		const tokenIds = tokens.map(token => token.id)
@@ -199,7 +75,7 @@ const Home: React.FC = () => {
 			dispatch(fetchTokenPrices(tokenIds))
 		}
 	}, [dispatch, tokens])
-	
+
 	const handleEditHoldings = useCallback((tokenId: string) => {
 		const currentHoldings = holdings[tokenId] || 0
 		setEditingToken(tokenId)
@@ -207,7 +83,7 @@ const Home: React.FC = () => {
 		setShowMenuForToken(null)
 		setShowEditModal(true)
 	}, [holdings])
-	
+
 	const handleSaveHoldings = useCallback(() => {
 		if (editingToken) {
 			const amount = parseFloat(editingHoldings) || 0
@@ -217,31 +93,31 @@ const Home: React.FC = () => {
 			setShowEditModal(false)
 		}
 	}, [dispatch, editingToken, editingHoldings])
-	
+
 	const handleCancelEdit = useCallback(() => {
 		setEditingToken(null)
 		setEditingHoldings('')
 		setShowEditModal(false)
 	}, [])
-	
+
 	const handleRemoveToken = useCallback((tokenId: string) => {
 		dispatch(removeTokenAndSave(tokenId))
 		setShowMenuForToken(null)
 	}, [dispatch])
-	
+
 	const handleMenuToggle = useCallback((tokenId: string, event: React.MouseEvent) => {
 		event.stopPropagation()
 		setShowMenuForToken(showMenuForToken === tokenId ? null : tokenId)
 	}, [showMenuForToken])
-	
+
 	// Memoized portfolio data calculation
 	const portfolioData = useMemo(() => {
 		if (tokens.length === 0) return defaultPortfolioData
-		
+
 		return tokens.map(token => {
 			const price = prices[token.id] || 0
 			const holding = holdings[token.id] || 0
-			const value = price * holding
+			const value = Number((price * holding).toFixed(1))
 			return {
 				name: token.symbol,
 				value: value,
@@ -249,7 +125,7 @@ const Home: React.FC = () => {
 			}
 		}).filter(item => item.value > 0)
 	}, [tokens, prices, holdings])
-	
+
 	// Memoized watchlist data calculation
 	const watchlistData = useMemo(() => {
 		return tokens.map((token, index) => {
@@ -257,7 +133,7 @@ const Home: React.FC = () => {
 			const holding = holdings[token.id] || 0
 			const value = price * holding
 			const change24h = token.price_change_percentage_24h || 0
-			
+
 			return {
 				id: index + 1,
 				tokenId: token.id,
@@ -273,7 +149,7 @@ const Home: React.FC = () => {
 			}
 		})
 	}, [tokens, prices, holdings])
-	
+
 	// Helper function to get token color
 	function getTokenColor(symbol: string): string {
 		const colors: { [key: string]: string } = {
@@ -288,7 +164,7 @@ const Home: React.FC = () => {
 		}
 		return colors[symbol.toUpperCase()] || '#6B7280'
 	}
-	
+
 	// Helper function to get token icon
 	function getTokenIcon(symbol: string): string {
 		const icons: { [key: string]: string } = {
@@ -303,64 +179,72 @@ const Home: React.FC = () => {
 		}
 		return icons[symbol.toUpperCase()] || symbol.charAt(0).toUpperCase()
 	}
-	
+
 	// Helper function to generate sparkline data
 	function generateSparklineData(price: number, change24h: number): Array<{ day: number; price: number }> {
 		const days = 7
 		const basePrice = price / (1 + change24h / 100)
 		const data = []
-		
+
 		for (let i = 0; i < days; i++) {
 			const variation = (Math.random() - 0.5) * 0.1 // ±5% variation
 			const dayPrice = basePrice * (1 + variation) * (1 + (change24h / 100) * (i / days))
 			data.push({ day: i + 1, price: Math.round(dayPrice * 100) / 100 })
 		}
-		
+
 		return data
 	}
-	
+
 	// Memoized total portfolio value calculation
 	const totalPortfolioValue = useMemo(() => {
 		return portfolioData.reduce((sum, item) => sum + item.value, 0)
 	}, [portfolioData])
-	
+
 	return (
-		<div className="min-h-screen bg-[#0D0D0D] text-white px-6 py-8">
-			{/* Tailwind Test - Remove this after confirming it works 
-			<div className="bg-red-500 text-white p-4 mb-4 rounded-lg">
-				✅ Tailwind CSS is working! This red box should be visible.
-			</div>*/}
+		<div className="min-h-screen bg-[#212124] text-white px-6 py-8">
+
 			{/* Portfolio Total Section */}
-			<motion.div 
-				className="mb-8"
+			<motion.div
+				className="mb-8 border border-[#27272A] bg-[#27272A] shadow-2xl rounded-[12px] p-6 h-[600px] md:h-auto"
 				initial={{ opacity: 0, y: 20 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.6 }}
 			>
-				<motion.h1 
-					className="text-2xl font-bold mb-6"
-					initial={{ opacity: 0, x: -20 }}
-					animate={{ opacity: 1, x: 0 }}
-					transition={{ duration: 0.4, delay: 0.1 }}
-				>
-					Portfolio Total
-				</motion.h1>
-				
+				<div className="md:flex items-center md:gap-[50%]">
+
+					<motion.h1
+						className="md:text-[16px] text-[14px] text-[#A1A1AA] mb-6"
+						initial={{ opacity: 0, x: -20 }}
+						animate={{ opacity: 1, x: 0 }}
+						transition={{ duration: 0.4, delay: 0.1 }}
+					>
+						Portfolio Total
+					</motion.h1>
+					<motion.h1
+						className="md:text-[16px] text-[14px] text-[#A1A1AA] mb-6 hidden md:block"
+						initial={{ opacity: 0, x: -20 }}
+						animate={{ opacity: 1, x: 0 }}
+						transition={{ duration: 0.4, delay: 0.1 }}
+					>
+						Portfolio Total
+					</motion.h1>
+				</div>
+
 				{loading && tokens.length === 0 ? (
 					<PortfolioLoading />
 				) : error && tokens.length === 0 ? (
 					<PortfolioError onRetry={handleRefreshPrices} />
 				) : (
-					<div className="flex flex-col xl:flex-row gap-8">
+					<div className="flex flex-col items-start xl:flex-row gap-8 ">
 						{/* Left: Portfolio Value */}
-						<motion.div 
-							className="flex-1"
+						<motion.div
+							className="flex-1 "
 							initial={{ opacity: 0, x: -30 }}
 							animate={{ opacity: 1, x: 0 }}
 							transition={{ duration: 0.5, delay: 0.2 }}
 						>
-							<motion.div 
-								className="text-4xl sm:text-5xl font-bold mb-2"
+							<motion.div
+								className="text-4xl sm:text-6xl font-bold md:mb-44 mb-10"
 								key={totalPortfolioValue}
 								initial={{ scale: 0.9 }}
 								animate={{ scale: 1 }}
@@ -374,14 +258,19 @@ const Home: React.FC = () => {
 								{error && <span className="ml-2 text-red-400">Error: {error}</span>}
 							</div>
 						</motion.div>
-						
+
 						{/* Right: Donut Chart */}
-						<motion.div 
-							className="flex-1 flex items-center justify-center"
+						<div className="">
+
+
+						</div>
+						<motion.div
+							className="flex-1 flex "
 							initial={{ opacity: 0, x: 30 }}
 							animate={{ opacity: 1, x: 0 }}
 							transition={{ duration: 0.5, delay: 0.3 }}
 						>
+
 							<div className="w-64 h-64 sm:w-80 sm:h-80 relative">
 								<ResponsiveContainer width="100%" height="100%">
 									<PieChart>
@@ -399,29 +288,29 @@ const Home: React.FC = () => {
 												<Cell key={`cell-${index}`} fill={entry.color} />
 											))}
 										</Pie>
-										<Tooltip contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#fff' }} />
+										<Tooltip contentStyle={{ background: '#ffffff', borderRadius: '30px', border: '1px solid #2a2a2a', color: '#fff' }} />
 									</PieChart>
 								</ResponsiveContainer>
 								{/* Custom Legend */}
-								<motion.div 
-									className="absolute right-0 top-1/2 transform -translate-y-1/2 space-y-2 sm:space-y-3"
+								<motion.div
+									className="md:absolute mt-10 md:mt-0 left-72 top-1/2 transform -translate-y-1/2 space-y-2 sm:space-y-3"
 									initial={{ opacity: 0 }}
 									animate={{ opacity: 1 }}
 									transition={{ duration: 0.4, delay: 0.5 }}
 								>
 									{portfolioData.map((entry, index) => (
-										<motion.div 
-											key={index} 
+										<motion.div
+											key={index}
 											className="flex items-center space-x-2"
 											initial={{ opacity: 0, x: 20 }}
 											animate={{ opacity: 1, x: 0 }}
 											transition={{ duration: 0.3, delay: 0.6 + index * 0.1 }}
 										>
-											<div 
-												className="w-2 h-2 sm:w-3 sm:h-3 rounded-full" 
+											<div
+												className="w-2 h-2 sm:w-3 sm:h-3 rounded-full"
 												style={{ backgroundColor: entry.color }}
 											></div>
-											<span className="text-xs sm:text-sm text-gray-300">
+											<span className="whitespace-nowrap text-xs sm:text-sm text-gray-300">
 												{entry.name}: {entry.value}%
 											</span>
 										</motion.div>
@@ -434,35 +323,35 @@ const Home: React.FC = () => {
 			</motion.div>
 
 			{/* Watchlist Section */}
-			<motion.div 
+			<motion.div
 				className="mt-8"
 				initial={{ opacity: 0, y: 20 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.6, delay: 0.4 }}
 			>
-				<div className="bg-[#121212] border border-[#1f1f1f] rounded-xl p-6">
+				<div className="bg-[#27272A] border border-[#27272A] shadow-2xl rounded-[12px] p-6">
 					{/* Header */}
-					<motion.div 
-						className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4"
+					<motion.div
+						className="flex flex-row sm:items-center justify-between mb-6 gap-4"
 						initial={{ opacity: 0, y: 10 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.4, delay: 0.5 }}
 					>
 						<div className="flex items-center">
-							<motion.span 
-								className="text-green-400 text-xl mr-2"
+							<motion.span
+								className="text-[#A9E851] text-2xl mr-2"
 								animate={{ rotate: [0, 10, -10, 0] }}
 								transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
 							>
 								★
 							</motion.span>
-							<h2 className="text-xl font-semibold text-white">Watchlist</h2>
+							<h2 className="text-xl text-white">Watchlist</h2>
 						</div>
-						<div className="flex flex-col sm:flex-row gap-3">
-							<motion.button 
+						<div className="flex flex-row gap-3">
+							<motion.button
 								onClick={handleRefreshPrices}
 								disabled={loading || tokens.length === 0}
-								className="flex items-center justify-center px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed rounded-lg text-white text-sm transition-colors"
+								className="flex items-center justify-center px-4 py-2 bg-[#38383a] hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed rounded-[6px] text-white text-sm transition-colors"
 								whileHover={{ scale: 1.02 }}
 								whileTap={{ scale: 0.98 }}
 							>
@@ -473,24 +362,26 @@ const Home: React.FC = () => {
 										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
 									</svg>
 								)}
-								{loading ? 'Refreshing...' : 'Refresh Prices'}
+								<span className="hidden md:inline">
+									{loading ? "Refreshing..." : "Refresh Prices"}
+								</span>
 							</motion.button>
-							<motion.button 
+							<motion.button
 								onClick={() => setIsAddTokenModalOpen(true)}
-								className="flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white text-sm transition-colors"
+								className="flex items-center justify-center px-4 py-2 bg-[#A9E851] rounded-[6px] hover:bg-green-700 text-black text-sm transition-colors"
 								whileHover={{ scale: 1.02 }}
 								whileTap={{ scale: 0.98 }}
 							>
 								<svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
 								</svg>
-								+ Add Token
+								Add Token
 							</motion.button>
 						</div>
 					</motion.div>
 
 					{/* Desktop Table */}
-					<div className="hidden lg:block overflow-x-auto">
+					<div className="block overflow-x-auto">
 						{loading && watchlistData.length === 0 ? (
 							<div className="flex items-center justify-center py-12">
 								<div className="text-center">
@@ -525,7 +416,7 @@ const Home: React.FC = () => {
 								}
 							/>
 						) : (
-							<table className="w-full">
+							<table className="w-full ">
 								<thead>
 									<tr className="border-b border-gray-700">
 										<th className="text-left py-4 px-4 text-sm font-medium text-gray-400">Token</th>
@@ -623,7 +514,7 @@ const Home: React.FC = () => {
 					</div>
 
 					{/* Mobile Cards */}
-					<div className="md:hidden space-y-4">
+					<div className="hidden space-y-4">
 						{loading && watchlistData.length === 0 ? (
 							<div className="flex items-center justify-center py-12">
 								<div className="text-center">
@@ -690,11 +581,11 @@ const Home: React.FC = () => {
 					</div>
 				</div>
 			</motion.div>
-			
+
 			{/* Add Token Modal */}
-			<AddTokenModal 
-				isOpen={isAddTokenModalOpen} 
-				onClose={() => setIsAddTokenModalOpen(false)} 
+			<AddTokenModal
+				isOpen={isAddTokenModalOpen}
+				onClose={() => setIsAddTokenModalOpen(false)}
 			/>
 
 			{/* Edit Holdings Modal */}
@@ -747,7 +638,7 @@ const Home: React.FC = () => {
 					</div>
 				</div>
 			)}
-			
+
 			{/* Demo Data Button */}
 			<DemoData />
 		</div>

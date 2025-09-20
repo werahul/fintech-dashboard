@@ -1,6 +1,7 @@
 import React, { memo, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import Sparkline from './Sparkline'
+import { Trash2, Pencil } from 'lucide-react';
 
 interface WatchlistRowProps {
   token: {
@@ -47,8 +48,8 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
 
   const rowVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       transition: { duration: 0.3 }
     },
@@ -60,9 +61,9 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
 
   const menuVariants = {
     hidden: { opacity: 0, scale: 0.95, y: -10 },
-    visible: { 
-      opacity: 1, 
-      scale: 1, 
+    visible: {
+      opacity: 1,
+      scale: 1,
       y: 0,
       transition: { duration: 0.2 }
     }
@@ -75,11 +76,11 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
         initial="hidden"
         animate="visible"
         whileHover="hover"
-        className="border-b border-gray-800 transition-colors"
+        className="border-b border-gray-800 transition-colors rounded-t-[12px]"
       >
         <td className="py-4 px-4">
           <div className="flex items-center">
-            <motion.div 
+            <motion.div
               className="w-8 h-8 rounded mr-3 flex items-center justify-center text-white font-bold text-sm"
               style={{ backgroundColor: token.iconColor }}
               whileHover={{ scale: 1.1 }}
@@ -96,12 +97,11 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
         <td className="py-4 px-4 text-right text-white font-medium">
           ${token.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </td>
-        <td className={`py-4 px-4 text-right font-medium ${
-          token.change24h >= 0 ? 'text-green-400' : 'text-red-400'
-        }`}>
+        <td className={`py-4 px-4 text-right font-medium ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'
+          }`}>
           {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
         </td>
-        <td className="py-4 px-4 text-center">
+        <td className="py-4 pl-[6rem] text-center">
           <Sparkline data={token.sparklineData} isPositive={token.change24h >= 0} />
         </td>
         <td className="py-4 px-4 text-right text-white">
@@ -111,7 +111,7 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
           ${token.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </td>
         <td className="py-4 px-4 text-center relative">
-          <motion.button 
+          <motion.button
             onClick={handleMenuToggle}
             className="text-gray-400 hover:text-white transition-colors"
             whileHover={{ scale: 1.1 }}
@@ -121,27 +121,29 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
               <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
             </svg>
           </motion.button>
-          
+
           {showMenu && (
             <motion.div
               variants={menuVariants}
               initial="hidden"
               animate="visible"
-              className="absolute right-0 top-full mt-1 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10"
+              className="absolute right-10  top-0 mt-1 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10"
             >
               <div className="py-1">
                 <motion.button
                   onClick={handleEditHoldings}
-                  className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 transition-colors"
+                  className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 transition-colors flex items-center gap-2"
                   whileHover={{ backgroundColor: 'rgba(55, 65, 81, 1)' }}
                 >
+                  <Pencil size={15} />
                   Edit Holdings
                 </motion.button>
                 <motion.button
                   onClick={handleRemoveToken}
-                  className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700 transition-colors"
+                  className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700 transition-colors flex items-center gap-2"
                   whileHover={{ backgroundColor: 'rgba(55, 65, 81, 1)' }}
                 >
+                  <Trash2 size={15}/>
                   Remove Token
                 </motion.button>
               </div>
@@ -163,7 +165,7 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
       >
         <td className="py-4 px-4">
           <div className="flex items-center">
-            <motion.div 
+            <motion.div
               className="w-8 h-8 rounded mr-3 flex items-center justify-center text-white font-bold text-sm"
               style={{ backgroundColor: token.iconColor }}
               whileHover={{ scale: 1.1 }}
@@ -180,9 +182,8 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
         <td className="py-4 px-4 text-right text-white font-medium">
           ${token.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </td>
-        <td className={`py-4 px-4 text-right font-medium ${
-          token.change24h >= 0 ? 'text-green-400' : 'text-red-400'
-        }`}>
+        <td className={`py-4 px-4 text-right font-medium ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'
+          }`}>
           {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
         </td>
         <td className="py-4 px-4 text-right text-white font-medium">
@@ -192,7 +193,7 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
           ${token.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </td>
         <td className="py-4 px-4 text-center relative">
-          <motion.button 
+          <motion.button
             onClick={handleMenuToggle}
             className="text-gray-400 hover:text-white transition-colors"
             whileHover={{ scale: 1.1 }}
@@ -202,7 +203,7 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
               <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
             </svg>
           </motion.button>
-          
+
           {showMenu && (
             <motion.div
               variants={menuVariants}
@@ -244,7 +245,7 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center">
-          <motion.div 
+          <motion.div
             className="w-8 h-8 rounded mr-3 flex items-center justify-center text-white font-bold text-sm"
             style={{ backgroundColor: token.iconColor }}
             whileHover={{ scale: 1.1 }}
@@ -258,7 +259,7 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
           </div>
         </div>
         <div className="relative">
-          <motion.button 
+          <motion.button
             onClick={handleMenuToggle}
             className="text-gray-400 hover:text-white transition-colors"
             whileHover={{ scale: 1.1 }}
@@ -268,7 +269,7 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
               <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
             </svg>
           </motion.button>
-          
+
           {showMenu && (
             <motion.div
               variants={menuVariants}
@@ -296,7 +297,7 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
           )}
         </div>
       </div>
-      
+
       <div className="grid grid-cols-2 gap-4 mb-3">
         <div>
           <div className="text-sm text-gray-400">Price</div>
@@ -304,9 +305,8 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
         </div>
         <div>
           <div className="text-sm text-gray-400">24h %</div>
-          <div className={`font-medium ${
-            token.change24h >= 0 ? 'text-green-400' : 'text-red-400'
-          }`}>
+          <div className={`font-medium ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'
+            }`}>
             {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
           </div>
         </div>
@@ -319,7 +319,7 @@ const WatchlistRow: React.FC<WatchlistRowProps> = memo(({
           <div className="text-white font-medium">${token.value.toLocaleString()}</div>
         </div>
       </div>
-      
+
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-400">7d Chart</div>
         <Sparkline data={token.sparklineData} isPositive={token.change24h >= 0} />
