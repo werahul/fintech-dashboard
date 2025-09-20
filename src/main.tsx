@@ -7,16 +7,16 @@ import { store } from './redux/store.ts'
 import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit'
 import { WagmiProvider, http, createConfig } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { sepolia } from 'wagmi/chains'
+import { mainnet } from 'wagmi/chains'
 
 import '@rainbow-me/rainbowkit/styles.css'
 
 const queryClient = new QueryClient()
 
 const wagmiConfig = createConfig({
-	chains: [sepolia],
+	chains: [mainnet],
 	transports: {
-		[sepolia.id]: http(),
+		[mainnet.id]: http(),
 	},
 })
 

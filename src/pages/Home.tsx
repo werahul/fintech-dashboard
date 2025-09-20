@@ -1,9 +1,14 @@
-import React, { useEffect, useState } from 'react'
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis } from 'recharts'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAppDispatch, useAppSelector } from '../redux/hooks'
-import { fetchTokenPrices, fetchTrendingTokens } from '../redux/watchlistSlice'
+import { fetchTokenPrices, fetchTrendingTokens, updateHoldingsAndSave, removeTokenAndSave } from '../redux/watchlistSlice'
 import AddTokenModal from '../components/AddTokenModal'
 import DemoData from '../components/DemoData'
+import WatchlistRow from '../components/WatchlistRow'
+import LoadingSpinner from '../components/LoadingSpinner'
+import EmptyState from '../components/EmptyState'
+import ErrorState from '../components/ErrorState'
 
 // Default portfolio data for initial display
 const defaultPortfolioData = [
@@ -138,77 +143,136 @@ const defaultPortfolioData = [
 ]
 */
 
-// Sparkline component
-const Sparkline: React.FC<{ data: any[], isPositive: boolean }> = ({ data, isPositive }) => {
-	return (
-		<div className="w-16 h-8">
-			<ResponsiveContainer width="100%" height="100%">
-				<LineChart data={data}>
-					<Line
-						type="monotone"
-						dataKey="price"
-						stroke={isPositive ? '#10B981' : '#EF4444'}
-						strokeWidth={2}
-						dot={false}
-					/>
-					<XAxis hide />
-					<YAxis hide />
-				</LineChart>
-			</ResponsiveContainer>
-		</div>
-	)
-}
+// Portfolio loading component
+const PortfolioLoading: React.FC = () => (
+  <div className="flex items-center justify-center py-12">
+    <div className="text-center">
+      <LoadingSpinner size="lg" className="mx-auto mb-4 text-blue-400" />
+      <p className="text-gray-400">Loading portfolio data...</p>
+    </div>
+  </div>
+)
+
+// Portfolio error component
+const PortfolioError: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
+  <div className="flex items-center justify-center py-12">
+    <ErrorState
+      title="Failed to load portfolio"
+      message="Unable to fetch your portfolio data. Please try again."
+      onRetry={onRetry}
+    />
+  </div>
+)
 
 const Home: React.FC = () => {
 	const dispatch = useAppDispatch()
 	const { tokens, holdings, prices, loading, error } = useAppSelector(state => state.watchlist)
 	const [isAddTokenModalOpen, setIsAddTokenModalOpen] = useState(false)
+	const [editingToken, setEditingToken] = useState<string | null>(null)
+	const [editingHoldings, setEditingHoldings] = useState<string>('')
+	const [showMenuForToken, setShowMenuForToken] = useState<string | null>(null)
+	const [showEditModal, setShowEditModal] = useState(false)
 	
 	// Load trending tokens on component mount
 	useEffect(() => {
 		dispatch(fetchTrendingTokens())
 	}, [dispatch])
 	
-	// Handle refresh prices
-	const handleRefreshPrices = () => {
+	// Close menu when clicking outside
+	useEffect(() => {
+		const handleClickOutside = () => {
+			if (showMenuForToken) {
+				setShowMenuForToken(null)
+			}
+		}
+		
+		document.addEventListener('mousedown', handleClickOutside)
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside)
+		}
+	}, [showMenuForToken])
+	
+	// Optimized handlers with useCallback
+	const handleRefreshPrices = useCallback(() => {
 		const tokenIds = tokens.map(token => token.id)
 		if (tokenIds.length > 0) {
 			dispatch(fetchTokenPrices(tokenIds))
 		}
-	}
+	}, [dispatch, tokens])
 	
-	// Calculate portfolio data from Redux state
-	const portfolioData = tokens.length > 0 ? tokens.map(token => {
-		const price = prices[token.id] || 0
-		const holding = holdings[token.id] || 0
-		const value = price * holding
-		return {
-			name: token.symbol,
-			value: value,
-			color: getTokenColor(token.symbol)
+	const handleEditHoldings = useCallback((tokenId: string) => {
+		const currentHoldings = holdings[tokenId] || 0
+		setEditingToken(tokenId)
+		setEditingHoldings(currentHoldings.toString())
+		setShowMenuForToken(null)
+		setShowEditModal(true)
+	}, [holdings])
+	
+	const handleSaveHoldings = useCallback(() => {
+		if (editingToken) {
+			const amount = parseFloat(editingHoldings) || 0
+			dispatch(updateHoldingsAndSave({ tokenId: editingToken, amount }))
+			setEditingToken(null)
+			setEditingHoldings('')
+			setShowEditModal(false)
 		}
-	}).filter(item => item.value > 0) : defaultPortfolioData
+	}, [dispatch, editingToken, editingHoldings])
 	
-	// Calculate watchlist data from Redux state
-	const watchlistData = tokens.map((token, index) => {
-		const price = prices[token.id] || 0
-		const holding = holdings[token.id] || 0
-		const value = price * holding
-		const change24h = token.price_change_percentage_24h || 0
+	const handleCancelEdit = useCallback(() => {
+		setEditingToken(null)
+		setEditingHoldings('')
+		setShowEditModal(false)
+	}, [])
+	
+	const handleRemoveToken = useCallback((tokenId: string) => {
+		dispatch(removeTokenAndSave(tokenId))
+		setShowMenuForToken(null)
+	}, [dispatch])
+	
+	const handleMenuToggle = useCallback((tokenId: string, event: React.MouseEvent) => {
+		event.stopPropagation()
+		setShowMenuForToken(showMenuForToken === tokenId ? null : tokenId)
+	}, [showMenuForToken])
+	
+	// Memoized portfolio data calculation
+	const portfolioData = useMemo(() => {
+		if (tokens.length === 0) return defaultPortfolioData
 		
-		return {
-			id: index + 1,
-			name: token.name,
-			symbol: token.symbol,
-			iconColor: getTokenColor(token.symbol),
-			iconText: getTokenIcon(token.symbol),
-			price: price,
-			change24h: change24h,
-			holdings: holding,
-			value: value,
-			sparklineData: generateSparklineData(price, change24h)
-		}
-	})
+		return tokens.map(token => {
+			const price = prices[token.id] || 0
+			const holding = holdings[token.id] || 0
+			const value = price * holding
+			return {
+				name: token.symbol,
+				value: value,
+				color: getTokenColor(token.symbol)
+			}
+		}).filter(item => item.value > 0)
+	}, [tokens, prices, holdings])
+	
+	// Memoized watchlist data calculation
+	const watchlistData = useMemo(() => {
+		return tokens.map((token, index) => {
+			const price = prices[token.id] || 0
+			const holding = holdings[token.id] || 0
+			const value = price * holding
+			const change24h = token.price_change_percentage_24h || 0
+			
+			return {
+				id: index + 1,
+				tokenId: token.id,
+				name: token.name,
+				symbol: token.symbol,
+				iconColor: getTokenColor(token.symbol),
+				iconText: getTokenIcon(token.symbol),
+				price: price,
+				change24h: change24h,
+				holdings: holding,
+				value: value,
+				sparklineData: generateSparklineData(price, change24h)
+			}
+		})
+	}, [tokens, prices, holdings])
 	
 	// Helper function to get token color
 	function getTokenColor(symbol: string): string {
@@ -255,8 +319,10 @@ const Home: React.FC = () => {
 		return data
 	}
 	
-	// Calculate total portfolio value
-	const totalPortfolioValue = portfolioData.reduce((sum, item) => sum + item.value, 0)
+	// Memoized total portfolio value calculation
+	const totalPortfolioValue = useMemo(() => {
+		return portfolioData.reduce((sum, item) => sum + item.value, 0)
+	}, [portfolioData])
 	
 	return (
 		<div className="min-h-screen bg-[#0D0D0D] text-white px-6 py-8">
@@ -265,275 +331,346 @@ const Home: React.FC = () => {
 				✅ Tailwind CSS is working! This red box should be visible.
 			</div>*/}
 			{/* Portfolio Total Section */}
-			<div className="mb-8">
-				<h1 className="text-2xl font-bold mb-6">Portfolio Total</h1>
-				<div className="flex flex-col xl:flex-row gap-8">
-					{/* Left: Portfolio Value */}
-					<div className="flex-1">
-						<div className="text-4xl sm:text-5xl font-bold mb-2">
-							${totalPortfolioValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-						</div>
-						<div className="text-sm text-gray-400">
-							Last updated: {new Date().toLocaleTimeString()}
-							{loading && <span className="ml-2 text-yellow-400">Updating...</span>}
-							{error && <span className="ml-2 text-red-400">Error: {error}</span>}
-						</div>
-					</div>
-					
-					{/* Right: Donut Chart */}
-					<div className="flex-1 flex items-center justify-center">
-						<div className="w-64 h-64 sm:w-80 sm:h-80 relative">
-							<ResponsiveContainer width="100%" height="100%">
-								<PieChart>
-									<Pie
-										data={portfolioData}
-										dataKey="value"
-										nameKey="name"
-										cx="50%"
-										cy="50%"
-										innerRadius={60}
-										outerRadius={100}
-										paddingAngle={2}
-									>
-										{portfolioData.map((entry, index) => (
-											<Cell key={`cell-${index}`} fill={entry.color} />
-										))}
-									</Pie>
-									<Tooltip contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#fff' }} />
-								</PieChart>
-							</ResponsiveContainer>
-							{/* Custom Legend */}
-							<div className="absolute right-0 top-1/2 transform -translate-y-1/2 space-y-2 sm:space-y-3">
-								{portfolioData.map((entry, index) => (
-									<div key={index} className="flex items-center space-x-2">
-										<div 
-											className="w-2 h-2 sm:w-3 sm:h-3 rounded-full" 
-											style={{ backgroundColor: entry.color }}
-										></div>
-										<span className="text-xs sm:text-sm text-gray-300">
-											{entry.name}: {entry.value}%
-										</span>
-									</div>
-								))}
+			<motion.div 
+				className="mb-8"
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.6 }}
+			>
+				<motion.h1 
+					className="text-2xl font-bold mb-6"
+					initial={{ opacity: 0, x: -20 }}
+					animate={{ opacity: 1, x: 0 }}
+					transition={{ duration: 0.4, delay: 0.1 }}
+				>
+					Portfolio Total
+				</motion.h1>
+				
+				{loading && tokens.length === 0 ? (
+					<PortfolioLoading />
+				) : error && tokens.length === 0 ? (
+					<PortfolioError onRetry={handleRefreshPrices} />
+				) : (
+					<div className="flex flex-col xl:flex-row gap-8">
+						{/* Left: Portfolio Value */}
+						<motion.div 
+							className="flex-1"
+							initial={{ opacity: 0, x: -30 }}
+							animate={{ opacity: 1, x: 0 }}
+							transition={{ duration: 0.5, delay: 0.2 }}
+						>
+							<motion.div 
+								className="text-4xl sm:text-5xl font-bold mb-2"
+								key={totalPortfolioValue}
+								initial={{ scale: 0.9 }}
+								animate={{ scale: 1 }}
+								transition={{ duration: 0.3 }}
+							>
+								${totalPortfolioValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+							</motion.div>
+							<div className="text-sm text-gray-400">
+								Last updated: {new Date().toLocaleTimeString()}
+								{loading && <span className="ml-2 text-yellow-400">Updating...</span>}
+								{error && <span className="ml-2 text-red-400">Error: {error}</span>}
 							</div>
-						</div>
+						</motion.div>
+						
+						{/* Right: Donut Chart */}
+						<motion.div 
+							className="flex-1 flex items-center justify-center"
+							initial={{ opacity: 0, x: 30 }}
+							animate={{ opacity: 1, x: 0 }}
+							transition={{ duration: 0.5, delay: 0.3 }}
+						>
+							<div className="w-64 h-64 sm:w-80 sm:h-80 relative">
+								<ResponsiveContainer width="100%" height="100%">
+									<PieChart>
+										<Pie
+											data={portfolioData}
+											dataKey="value"
+											nameKey="name"
+											cx="50%"
+											cy="50%"
+											innerRadius={60}
+											outerRadius={100}
+											paddingAngle={2}
+										>
+											{portfolioData.map((entry, index) => (
+												<Cell key={`cell-${index}`} fill={entry.color} />
+											))}
+										</Pie>
+										<Tooltip contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#fff' }} />
+									</PieChart>
+								</ResponsiveContainer>
+								{/* Custom Legend */}
+								<motion.div 
+									className="absolute right-0 top-1/2 transform -translate-y-1/2 space-y-2 sm:space-y-3"
+									initial={{ opacity: 0 }}
+									animate={{ opacity: 1 }}
+									transition={{ duration: 0.4, delay: 0.5 }}
+								>
+									{portfolioData.map((entry, index) => (
+										<motion.div 
+											key={index} 
+											className="flex items-center space-x-2"
+											initial={{ opacity: 0, x: 20 }}
+											animate={{ opacity: 1, x: 0 }}
+											transition={{ duration: 0.3, delay: 0.6 + index * 0.1 }}
+										>
+											<div 
+												className="w-2 h-2 sm:w-3 sm:h-3 rounded-full" 
+												style={{ backgroundColor: entry.color }}
+											></div>
+											<span className="text-xs sm:text-sm text-gray-300">
+												{entry.name}: {entry.value}%
+											</span>
+										</motion.div>
+									))}
+								</motion.div>
+							</div>
+						</motion.div>
 					</div>
-				</div>
-			</div>
+				)}
+			</motion.div>
 
 			{/* Watchlist Section */}
-			<div className="mt-8">
+			<motion.div 
+				className="mt-8"
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.6, delay: 0.4 }}
+			>
 				<div className="bg-[#121212] border border-[#1f1f1f] rounded-xl p-6">
 					{/* Header */}
-					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+					<motion.div 
+						className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4"
+						initial={{ opacity: 0, y: 10 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.4, delay: 0.5 }}
+					>
 						<div className="flex items-center">
-							<span className="text-green-400 text-xl mr-2">★</span>
+							<motion.span 
+								className="text-green-400 text-xl mr-2"
+								animate={{ rotate: [0, 10, -10, 0] }}
+								transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+							>
+								★
+							</motion.span>
 							<h2 className="text-xl font-semibold text-white">Watchlist</h2>
 						</div>
 						<div className="flex flex-col sm:flex-row gap-3">
-							<button 
+							<motion.button 
 								onClick={handleRefreshPrices}
 								disabled={loading || tokens.length === 0}
 								className="flex items-center justify-center px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed rounded-lg text-white text-sm transition-colors"
+								whileHover={{ scale: 1.02 }}
+								whileTap={{ scale: 0.98 }}
 							>
-								<svg className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-								</svg>
+								{loading ? (
+									<LoadingSpinner size="sm" className="mr-2" />
+								) : (
+									<svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+									</svg>
+								)}
 								{loading ? 'Refreshing...' : 'Refresh Prices'}
-							</button>
-							<button 
+							</motion.button>
+							<motion.button 
 								onClick={() => setIsAddTokenModalOpen(true)}
 								className="flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white text-sm transition-colors"
+								whileHover={{ scale: 1.02 }}
+								whileTap={{ scale: 0.98 }}
 							>
 								<svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
 								</svg>
 								+ Add Token
-							</button>
+							</motion.button>
 						</div>
-					</div>
+					</motion.div>
 
 					{/* Desktop Table */}
 					<div className="hidden lg:block overflow-x-auto">
-						<table className="w-full">
-							<thead>
-								<tr className="border-b border-gray-700">
-									<th className="text-left py-4 px-4 text-sm font-medium text-gray-400">Token</th>
-									<th className="text-right py-4 px-4 text-sm font-medium text-gray-400">Price</th>
-									<th className="text-right py-4 px-4 text-sm font-medium text-gray-400">24h %</th>
-									<th className="text-center py-4 px-4 text-sm font-medium text-gray-400">Sparkline (7d)</th>
-									<th className="text-right py-4 px-4 text-sm font-medium text-gray-400">Holdings</th>
-									<th className="text-right py-4 px-4 text-sm font-medium text-gray-400">Value</th>
-									<th className="text-center py-4 px-4 text-sm font-medium text-gray-400"></th>
-								</tr>
-							</thead>
-							<tbody>
-								{watchlistData.length === 0 ? (
-									<tr>
-										<td colSpan={7} className="py-8 px-4 text-center text-gray-400">
-											<div className="flex flex-col items-center">
-												<svg className="w-12 h-12 mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-												</svg>
-												<p className="text-lg font-medium mb-2">No tokens in watchlist</p>
-												<p className="text-sm">Add tokens to start tracking your portfolio</p>
-											</div>
-										</td>
+						{loading && watchlistData.length === 0 ? (
+							<div className="flex items-center justify-center py-12">
+								<div className="text-center">
+									<LoadingSpinner size="lg" className="mx-auto mb-4 text-blue-400" />
+									<p className="text-gray-400">Loading watchlist...</p>
+								</div>
+							</div>
+						) : error && watchlistData.length === 0 ? (
+							<ErrorState
+								title="Failed to load watchlist"
+								message="Unable to fetch your watchlist data. Please try again."
+								onRetry={handleRefreshPrices}
+							/>
+						) : watchlistData.length === 0 ? (
+							<EmptyState
+								icon={
+									<svg className="w-12 h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+									</svg>
+								}
+								title="No tokens in watchlist"
+								description="Add tokens to start tracking your portfolio"
+								action={
+									<motion.button
+										onClick={() => setIsAddTokenModalOpen(true)}
+										className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+										whileHover={{ scale: 1.02 }}
+										whileTap={{ scale: 0.98 }}
+									>
+										+ Add Your First Token
+									</motion.button>
+								}
+							/>
+						) : (
+							<table className="w-full">
+								<thead>
+									<tr className="border-b border-gray-700">
+										<th className="text-left py-4 px-4 text-sm font-medium text-gray-400">Token</th>
+										<th className="text-right py-4 px-4 text-sm font-medium text-gray-400">Price</th>
+										<th className="text-right py-4 px-4 text-sm font-medium text-gray-400">24h %</th>
+										<th className="text-center py-4 px-4 text-sm font-medium text-gray-400">Sparkline (7d)</th>
+										<th className="text-right py-4 px-4 text-sm font-medium text-gray-400">Holdings</th>
+										<th className="text-right py-4 px-4 text-sm font-medium text-gray-400">Value</th>
+										<th className="text-center py-4 px-4 text-sm font-medium text-gray-400"></th>
 									</tr>
-								) : (
-									watchlistData.map((token) => (
-										<tr key={token.id} className="border-b border-gray-800 hover:bg-gray-800/30 transition-colors">
-											<td className="py-4 px-4">
-												<div className="flex items-center">
-													<div 
-														className="w-8 h-8 rounded mr-3 flex items-center justify-center text-white font-bold text-sm"
-														style={{ backgroundColor: token.iconColor }}
-													>
-														{token.iconText}
-													</div>
-													<div>
-														<div className="font-medium text-white">{token.name}</div>
-														<div className="text-sm text-gray-400">({token.symbol})</div>
-													</div>
-												</div>
-											</td>
-											<td className="py-4 px-4 text-right text-white font-medium">
-												${token.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-											</td>
-											<td className={`py-4 px-4 text-right font-medium ${
-												token.change24h >= 0 ? 'text-green-400' : 'text-red-400'
-											}`}>
-												{token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
-											</td>
-											<td className="py-4 px-4 text-center">
-												<Sparkline data={token.sparklineData} isPositive={token.change24h >= 0} />
-											</td>
-											<td className="py-4 px-4 text-right text-white">
-												{token.holdings.toFixed(4)}
-											</td>
-											<td className="py-4 px-4 text-right text-white font-medium">
-												${token.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-											</td>
-											<td className="py-4 px-4 text-center">
-												<button className="text-gray-400 hover:text-white transition-colors">
-													<svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-														<path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-													</svg>
-												</button>
-											</td>
-										</tr>
-									))
-								)}
-							</tbody>
-						</table>
+								</thead>
+								<tbody>
+									<AnimatePresence>
+										{watchlistData.map((token) => (
+											<WatchlistRow
+												key={token.id}
+												token={token}
+												showMenu={showMenuForToken === token.tokenId}
+												onMenuToggle={handleMenuToggle}
+												onEditHoldings={handleEditHoldings}
+												onRemoveToken={handleRemoveToken}
+												isDesktop={true}
+											/>
+										))}
+									</AnimatePresence>
+								</tbody>
+							</table>
+						)}
 					</div>
 
 					{/* Tablet Table */}
 					<div className="hidden md:block lg:hidden overflow-x-auto">
-						<table className="w-full">
-							<thead>
-								<tr className="border-b border-gray-700">
-									<th className="text-left py-4 px-4 text-sm font-medium text-gray-400">Token</th>
-									<th className="text-right py-4 px-4 text-sm font-medium text-gray-400">Price</th>
-									<th className="text-right py-4 px-4 text-sm font-medium text-gray-400">24h %</th>
-									<th className="text-right py-4 px-4 text-sm font-medium text-gray-400">Value</th>
-									<th className="text-center py-4 px-4 text-sm font-medium text-gray-400"></th>
-								</tr>
-							</thead>
-							<tbody>
-								{watchlistData.map((token) => (
-									<tr key={token.id} className="border-b border-gray-800 hover:bg-gray-800/30 transition-colors">
-										<td className="py-4 px-4">
-											<div className="flex items-center">
-												<div 
-													className="w-8 h-8 rounded mr-3 flex items-center justify-center text-white font-bold text-sm"
-													style={{ backgroundColor: token.iconColor }}
-												>
-													{token.iconText}
-												</div>
-												<div>
-													<div className="font-medium text-white">{token.name}</div>
-													<div className="text-sm text-gray-400">({token.symbol})</div>
-												</div>
-											</div>
-										</td>
-										<td className="py-4 px-4 text-right text-white font-medium">
-											${token.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-										</td>
-										<td className={`py-4 px-4 text-right font-medium ${
-											token.change24h >= 0 ? 'text-green-400' : 'text-red-400'
-										}`}>
-											{token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
-										</td>
-										<td className="py-4 px-4 text-right text-white font-medium">
-											${token.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-										</td>
-										<td className="py-4 px-4 text-center">
-											<button className="text-gray-400 hover:text-white transition-colors">
-												<svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-													<path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-												</svg>
-											</button>
-										</td>
+						{loading && watchlistData.length === 0 ? (
+							<div className="flex items-center justify-center py-12">
+								<div className="text-center">
+									<LoadingSpinner size="lg" className="mx-auto mb-4 text-blue-400" />
+									<p className="text-gray-400">Loading watchlist...</p>
+								</div>
+							</div>
+						) : error && watchlistData.length === 0 ? (
+							<ErrorState
+								title="Failed to load watchlist"
+								message="Unable to fetch your watchlist data. Please try again."
+								onRetry={handleRefreshPrices}
+							/>
+						) : watchlistData.length === 0 ? (
+							<EmptyState
+								icon={
+									<svg className="w-12 h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+									</svg>
+								}
+								title="No tokens in watchlist"
+								description="Add tokens to start tracking your portfolio"
+								action={
+									<motion.button
+										onClick={() => setIsAddTokenModalOpen(true)}
+										className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+										whileHover={{ scale: 1.02 }}
+										whileTap={{ scale: 0.98 }}
+									>
+										+ Add Your First Token
+									</motion.button>
+								}
+							/>
+						) : (
+							<table className="w-full">
+								<thead>
+									<tr className="border-b border-gray-700">
+										<th className="text-left py-4 px-4 text-sm font-medium text-gray-400">Token</th>
+										<th className="text-right py-4 px-4 text-sm font-medium text-gray-400">Price</th>
+										<th className="text-right py-4 px-4 text-sm font-medium text-gray-400">24h %</th>
+										<th className="text-right py-4 px-4 text-sm font-medium text-gray-400">Holdings</th>
+										<th className="text-right py-4 px-4 text-sm font-medium text-gray-400">Value</th>
+										<th className="text-center py-4 px-4 text-sm font-medium text-gray-400"></th>
 									</tr>
-								))}
-							</tbody>
-						</table>
+								</thead>
+								<tbody>
+									<AnimatePresence>
+										{watchlistData.map((token) => (
+											<WatchlistRow
+												key={token.id}
+												token={token}
+												showMenu={showMenuForToken === token.tokenId}
+												onMenuToggle={handleMenuToggle}
+												onEditHoldings={handleEditHoldings}
+												onRemoveToken={handleRemoveToken}
+												isTablet={true}
+											/>
+										))}
+									</AnimatePresence>
+								</tbody>
+							</table>
+						)}
 					</div>
 
 					{/* Mobile Cards */}
 					<div className="md:hidden space-y-4">
-						{watchlistData.map((token) => (
-							<div key={token.id} className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-								<div className="flex items-center justify-between mb-3">
-									<div className="flex items-center">
-										<div 
-											className="w-8 h-8 rounded mr-3 flex items-center justify-center text-white font-bold text-sm"
-											style={{ backgroundColor: token.iconColor }}
-										>
-											{token.iconText}
-										</div>
-										<div>
-											<div className="font-medium text-white">{token.name}</div>
-											<div className="text-sm text-gray-400">({token.symbol})</div>
-										</div>
-									</div>
-									<button className="text-gray-400 hover:text-white transition-colors">
-										<svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-											<path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-										</svg>
-									</button>
-								</div>
-								
-								<div className="grid grid-cols-2 gap-4 mb-3">
-									<div>
-										<div className="text-sm text-gray-400">Price</div>
-										<div className="text-white font-medium">${token.price.toLocaleString()}</div>
-									</div>
-									<div>
-										<div className="text-sm text-gray-400">24h %</div>
-										<div className={`font-medium ${
-											token.change24h >= 0 ? 'text-green-400' : 'text-red-400'
-										}`}>
-											{token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
-										</div>
-									</div>
-									<div>
-										<div className="text-sm text-gray-400">Holdings</div>
-										<div className="text-white">{token.holdings.toFixed(4)}</div>
-									</div>
-									<div>
-										<div className="text-sm text-gray-400">Value</div>
-										<div className="text-white font-medium">${token.value.toLocaleString()}</div>
-									</div>
-								</div>
-								
-								<div className="flex items-center justify-between">
-									<div className="text-sm text-gray-400">7d Chart</div>
-									<Sparkline data={token.sparklineData} isPositive={token.change24h >= 0} />
+						{loading && watchlistData.length === 0 ? (
+							<div className="flex items-center justify-center py-12">
+								<div className="text-center">
+									<LoadingSpinner size="lg" className="mx-auto mb-4 text-blue-400" />
+									<p className="text-gray-400">Loading watchlist...</p>
 								</div>
 							</div>
-						))}
+						) : error && watchlistData.length === 0 ? (
+							<ErrorState
+								title="Failed to load watchlist"
+								message="Unable to fetch your watchlist data. Please try again."
+								onRetry={handleRefreshPrices}
+							/>
+						) : watchlistData.length === 0 ? (
+							<EmptyState
+								icon={
+									<svg className="w-12 h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+									</svg>
+								}
+								title="No tokens in watchlist"
+								description="Add tokens to start tracking your portfolio"
+								action={
+									<motion.button
+										onClick={() => setIsAddTokenModalOpen(true)}
+										className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+										whileHover={{ scale: 1.02 }}
+										whileTap={{ scale: 0.98 }}
+									>
+										+ Add Your First Token
+									</motion.button>
+								}
+							/>
+						) : (
+							<AnimatePresence>
+								{watchlistData.map((token) => (
+									<WatchlistRow
+										key={token.id}
+										token={token}
+										showMenu={showMenuForToken === token.tokenId}
+										onMenuToggle={handleMenuToggle}
+										onEditHoldings={handleEditHoldings}
+										onRemoveToken={handleRemoveToken}
+									/>
+								))}
+							</AnimatePresence>
+						)}
 					</div>
 
 					{/* Pagination Footer */}
@@ -552,13 +689,64 @@ const Home: React.FC = () => {
 						</div>
 					</div>
 				</div>
-			</div>
+			</motion.div>
 			
 			{/* Add Token Modal */}
 			<AddTokenModal 
 				isOpen={isAddTokenModalOpen} 
 				onClose={() => setIsAddTokenModalOpen(false)} 
 			/>
+
+			{/* Edit Holdings Modal */}
+			{showEditModal && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+					<div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+						<div className="flex justify-between items-center mb-6">
+							<h2 className="text-xl font-semibold text-white">Holdings</h2>
+							<button
+								onClick={handleCancelEdit}
+								className="text-gray-400 hover:text-white"
+							>
+								<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+								</svg>
+							</button>
+						</div>
+
+						<div className="space-y-4">
+							{/* Current Holdings List */}
+							<div className="space-y-2">
+								{watchlistData.map((token) => (
+									<div key={token.id} className="text-white text-sm">
+										{token.holdings.toFixed(6)}
+									</div>
+								))}
+							</div>
+
+							{/* Edit Input */}
+							<div className="flex items-center space-x-3">
+								<div className="flex-1">
+									<input
+										type="number"
+										value={editingHoldings}
+										onChange={(e) => setEditingHoldings(e.target.value)}
+										className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+										placeholder="Select"
+										step="0.000001"
+										min="0"
+									/>
+								</div>
+								<button
+									onClick={handleSaveHoldings}
+									className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
+								>
+									Save
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
 			
 			{/* Demo Data Button */}
 			<DemoData />

@@ -24,6 +24,20 @@ export interface WatchlistState {
   trendingTokens: TrendingToken[]
 }
 
+// Load initial state from localStorage
+const loadStateFromStorage = (): Partial<WatchlistState> => {
+  try {
+    const serializedState = localStorage.getItem('portfolio-watchlist')
+    if (serializedState === null) {
+      return {}
+    }
+    return JSON.parse(serializedState)
+  } catch (error) {
+    console.warn('Failed to load watchlist from localStorage:', error)
+    return {}
+  }
+}
+
 const initialState: WatchlistState = {
   tokens: [],
   holdings: {},
@@ -33,7 +47,8 @@ const initialState: WatchlistState = {
   loading: false,
   error: null,
   searchResults: [],
-  trendingTokens: []
+  trendingTokens: [],
+  ...loadStateFromStorage()
 }
 
 // Async thunks
@@ -241,6 +256,35 @@ export const watchlistSlice = createSlice({
       })
   }
 })
+
+// Save to localStorage function
+const saveStateToStorage = (state: WatchlistState) => {
+  try {
+    localStorage.setItem('portfolio-watchlist', JSON.stringify(state))
+  } catch (error) {
+    console.warn('Failed to save watchlist to localStorage:', error)
+  }
+}
+
+// Enhanced actions that save to localStorage
+export const addTokenAndSave = (token: Token) => (dispatch: any, getState: any) => {
+  dispatch(addToken(token))
+  const state = getState().watchlist
+  saveStateToStorage(state)
+}
+
+export const removeTokenAndSave = (tokenId: string) => (dispatch: any, getState: any) => {
+  dispatch(removeToken(tokenId))
+  const state = getState().watchlist
+  saveStateToStorage(state)
+}
+
+export const updateHoldingsAndSave = (payload: { tokenId: string; amount: number }) => (dispatch: any, getState: any) => {
+  dispatch(updateHoldings(payload))
+  dispatch(calculatePortfolioValue())
+  const state = getState().watchlist
+  saveStateToStorage(state)
+}
 
 export const {
   addToken,
