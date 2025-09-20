@@ -351,12 +351,12 @@ const Home: React.FC = () => {
 							<motion.button
 								onClick={handleRefreshPrices}
 								disabled={loading || tokens.length === 0}
-								className="flex items-center justify-center sm:px-4 px-2 sm:py-2 py-1 bg-[#38383a] hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed rounded-[6px] text-white text-sm transition-colors"
+								className="flex items-center justify-center sm:px-4 px-2 sm:py-2 py-1 bg-[#212124] hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed rounded-[6px] text-white text-sm transition-colors"
 								whileHover={{ scale: 1.02 }}
 								whileTap={{ scale: 0.98 }}
 							>
 								{loading ? (
-									<LoadingSpinner size="sm" className="mr-2" />
+									<LoadingSpinner size="sm" className="sm:mr-2" />
 								) : (
 									<svg className="w-4 h-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
