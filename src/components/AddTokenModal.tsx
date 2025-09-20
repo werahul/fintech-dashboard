@@ -163,7 +163,7 @@ const AddTokenModal: React.FC<AddTokenModalProps> = ({ isOpen, onClose }) => {
           transition={{ duration: 0.3 }}
         >
           <motion.div 
-            className="bg-[#212124] rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col"
+            className="bg-[#212124] rounded-lg sm:p-6 p-4 w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col"
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -318,7 +318,7 @@ const AddTokenModal: React.FC<AddTokenModalProps> = ({ isOpen, onClose }) => {
               <motion.button
                 onClick={handleAddToWatchlist}
                 disabled={selectedTokens.size === 0}
-                className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                className={`sm:px-6 px-3 sm:py-2 py-1 rounded-lg font-medium transition-colors ${
                   selectedTokens.size > 0
                     ? 'bg-blue-600 hover:bg-blue-700 text-white'
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
