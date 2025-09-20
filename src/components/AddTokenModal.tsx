@@ -5,7 +5,7 @@ import { addTokenAndSave, searchTokensThunk, clearSearchResults, fetchTrendingTo
 import type { SearchResult, TrendingToken } from '../utils/api'
 import LoadingSpinner from './LoadingSpinner'
 import EmptyState from './EmptyState'
-import ErrorState from './ErrorState'
+// import ErrorState from './ErrorState'
 
 interface AddTokenModalProps {
   isOpen: boolean
